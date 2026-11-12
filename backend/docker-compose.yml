@@ -1,0 +1,55 @@
+name: gymnastics-club
+volumes:
+  db_data:
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-gymnastics_club}
+      POSTGRES_USER: ${DATABASE_USERNAME:-gymnastics_dev}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in .env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-gymnastics_dev} -d ${DATABASE_NAME:-gymnastics_club}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    restart: unless-stopped
+
+  migrate:
+    build: .
+    environment: &app_environment
+      DATABASE_HOST: db
+      DATABASE_PORT: "5432"
+      DATABASE_NAME: ${DATABASE_NAME:-gymnastics_club}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-gymnastics_dev}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:?Set DATABASE_PASSWORD in .env}
+      DATABASE_TLS: ${DATABASE_TLS:-disable}
+      DATABASE_TLS_ALLOW_PRIVATE_COMPOSE_LINK: "true"
+      AUTH_TOKEN_TTL_SECONDS: ${AUTH_TOKEN_TTL_SECONDS:-43200}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["migrate", "--yes", "--env", "production"]
+    restart: "no"
+
+  app:
+    build: .
+    environment: *app_environment
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command: ["serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
+    ports:
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
