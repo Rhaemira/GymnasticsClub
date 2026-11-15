@@ -38,6 +38,10 @@ git status --short
 
 Then run the relevant iOS and backend validation described in the root README. Confirm the root `docs/API_CONTRACT.md` agrees with both component implementations.
 
+## Synchronization note for this branch
+
+The current cleanup synchronized changed files into the `ios/` and `backend/` snapshots as ordinary content commits. Those commits make the subtree contents match the standalone branches, but they do not import the corresponding upstream commit objects as subtree merge commits. Before the next `git subtree pull`, inspect the split history and merge base locally. If Git reports unrelated or divergent history, stop and reconcile the subtree history deliberately; do not force-push, reset the subtree, or use a squash operation merely to silence the warning.
+
 ## Important
 
 The component branches may contain changes not yet merged into their standalone `main` branches. Synchronize the reviewed feature branch explicitly, and do not merge either component PR merely to make the monorepo update possible. The monorepo should retain a clear audit trail of each subtree pull.
