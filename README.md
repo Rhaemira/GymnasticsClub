@@ -90,14 +90,21 @@ Scripts/migrate.sh
 Scripts/start.sh
 ```
 
-Create the first administrator in another terminal:
+Create the first administrator after the API is ready.
+
+**Docker Compose:** in the `backend/` directory, read the password silently and pass it via the environment:
 
 ```bash
-cd backend
-Scripts/create-admin.sh
+read -r -p "Administrator email: " ADMIN_EMAIL
+read -r -s -p "Administrator password: " ADMIN_INITIAL_PASSWORD
+echo
+docker compose run --rm -e ADMIN_EMAIL -e ADMIN_INITIAL_PASSWORD app create-admin
+unset ADMIN_INITIAL_PASSWORD
 ```
 
-The password is prompted without echo. Do not put real credentials in source control or command history. See [backend/README.md](backend/README.md) for detailed setup and operations.
+**Native macOS:** run `backend/Scripts/create-admin.sh`; it prompts for the password without echo.
+
+Do not put real credentials in source control, command history or logs. See [backend/README.md](backend/README.md) for detailed setup and operations.
 
 ### 2. Run the iOS app
 
