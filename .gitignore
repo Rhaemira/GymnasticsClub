@@ -1,0 +1,40 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+**/DerivedData/
+**/xcuserdata/
+**/*.xcuserstate
+**/*.xccheckout
+**/*.moved-aside
+**/*.hmap
+**/*.ipa
+**/*.xcarchive
+**/*.dSYM
+**/*.dSYM.zip
+**/*.xcresult
+
+# Swift Package Manager
+**/.build/
+**/.swiftpm/
+
+# Local configuration and secrets
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+Secrets/
+**/Secrets/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and temporary files
+*.log
+*.tmp
