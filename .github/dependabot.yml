@@ -4,14 +4,6 @@ updates:
     directory: /
     schedule:
       interval: monthly
-  - package-ecosystem: github-actions
-    directory: /ios
-    schedule:
-      interval: monthly
-  - package-ecosystem: github-actions
-    directory: /backend
-    schedule:
-      interval: monthly
   - package-ecosystem: docker
     directory: /backend
     schedule:
