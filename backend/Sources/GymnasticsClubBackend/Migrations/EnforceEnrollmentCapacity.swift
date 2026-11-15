@@ -42,16 +42,51 @@ struct EnforceEnrollmentCapacity: AsyncMigration {
             $$ LANGUAGE plpgsql;
             """).run()
 
+        // Create missing triggers only, so interrupted DDL can be retried.
         try await sql.raw("""
-            CREATE TRIGGER gymnastics_enrollment_capacity
-            BEFORE INSERT ON enrollments
-            FOR EACH ROW EXECUTE FUNCTION gymnastics_check_class_capacity();
+            DO $
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_trigger
+                    WHERE tgname = 'gymnastics_enrollment_capacity'
+                      AND tgrelid = 'enrollments'::regclass
+                      AND NOT tgisinternal
+                ) THEN
+                    CREATE TRIGGER gymnastics_enrollment_capacity
+                    BEFORE INSERT ON enrollments
+                    FOR EACH ROW EXECUTE FUNCTION gymnastics_check_class_capacity();
+                END IF;
+
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_trigger
+                    WHERE tgname = 'gymnastics_class_capacity_update'
+                      AND tgrelid = 'classes'::regclass
+                      AND NOT tgisinternal
+                ) THEN
+                    CREATE TRIGGER gymnastics_class_capacity_update
+                    BEFORE UPDATE OF capacity ON classes
+                    FOR EACH ROW EXECUTE FUNCTION gymnastics_check_class_capacity();
+                END IF;
+            END
+            $;
             """).run()
 
+        // Supports class-scoped capacity counts and analytics joins.
         try await sql.raw("""
-            CREATE TRIGGER gymnastics_class_capacity_update
-            BEFORE UPDATE OF capacity ON classes
-            FOR EACH ROW EXECUTE FUNCTION gymnastics_check_class_capacity();
+            CREATE INDEX IF NOT EXISTS enrollments_class_id_idx
+            ON enrollments (class_id);
+            """).run()
+        try await sql.raw("""
+            CREATE INDEX IF NOT EXISTS enrollments_athlete_id_idx
+            ON enrollments (athlete_id);
+            """).run()
+        try await sql.raw("""
+            CREATE INDEX IF NOT EXISTS classes_coach_id_idx
+            ON classes (coach_id);
+            """).run()
+        try await sql.raw("""
+            CREATE INDEX IF NOT EXISTS attendance_class_id_idx
+            ON attendance (class_id);
             """).run()
     }
 
@@ -60,5 +95,9 @@ struct EnforceEnrollmentCapacity: AsyncMigration {
         try await sql.raw("DROP TRIGGER IF EXISTS gymnastics_enrollment_capacity ON enrollments;").run()
         try await sql.raw("DROP TRIGGER IF EXISTS gymnastics_class_capacity_update ON classes;").run()
         try await sql.raw("DROP FUNCTION IF EXISTS gymnastics_check_class_capacity();").run()
+        try await sql.raw("DROP INDEX IF EXISTS attendance_class_id_idx;").run()
+        try await sql.raw("DROP INDEX IF EXISTS classes_coach_id_idx;").run()
+        try await sql.raw("DROP INDEX IF EXISTS enrollments_athlete_id_idx;").run()
+        try await sql.raw("DROP INDEX IF EXISTS enrollments_class_id_idx;").run()
     }
 }
